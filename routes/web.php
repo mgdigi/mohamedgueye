@@ -16,3 +16,18 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+
+Route::get('/test-mail', function () {
+    try {
+        \Mail::raw('Test email de Laravel', function($message) {
+            $message->to('gueyemohamed287@gmail.com')
+                   ->subject('Test Laravel Mail');
+        });
+        return 'Email envoyé avec succès !';
+    } catch (\Exception $e) {
+        \Log::error('Erreur mail : ' . $e->getMessage());
+        return 'Erreur : ' . $e->getMessage();
+    }
+});
