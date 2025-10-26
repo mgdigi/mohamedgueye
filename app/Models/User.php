@@ -3,15 +3,18 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Passport\HasApiTokens;
 
-class User extends BaseModel
+class User extends Authenticatable
 {
-    use  HasFactory, Notifiable, SoftDeletes;
+    use  HasFactory, HasApiTokens ,  Notifiable, SoftDeletes, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -57,12 +60,12 @@ class User extends BaseModel
 
     
 
-    protected function password()  : Attribute {
-        return Attribute::make(
-           set: fn($value) => $value ? bcrypt($value) : bcrypt('admin123')
-
-        );
-    }
+    protected function password(): Attribute
+{
+    return Attribute::make(
+        set: fn ($value) => Hash::make($value),
+    );
+}
 
     public function client(){
         return $this->hasOne(Client::class);

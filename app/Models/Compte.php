@@ -3,17 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
+use Laravel\Passport\HasApiTokens;
+use Illuminate\Support\Facades\DB;
+
+
 
 class Compte extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasApiTokens,  SoftDeletes;
 
     protected $table = 'comptes';
 
@@ -27,14 +28,29 @@ class Compte extends BaseModel
         'devise',
         'statut',
         'derniere_modification',
-        'version'
+        'version',
+        'code_verification',
+        'code_expire_at'
     ];
 
-    protected function numeroCompte(): Attribute
+   
+   protected function numeroCompte(): Attribute
     {
         return Attribute::make(
-            set: fn($value) => $value ?: 'ACC-' . strtoupper(Str::random(10))
+            get: fn ($value) => $value,
+            set: fn ($value) => $value ?: 'ACC-' . strtoupper(Str::random(10))
         );
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($compte) {
+            if (!$compte->numero_compte) {
+                $compte->numero_compte = 'ACC-' . strtoupper(Str::random(10));
+            }
+        });
     }
 
     public function scopeNumero($query, $numero)
@@ -59,6 +75,10 @@ class Compte extends BaseModel
 
     if (!empty($filters['statut'])) {
         $query->where('statut', $filters['statut']);
+    }
+
+    if(!empty($filters['numero_compte'])) {
+        $query->where('numero_compte', $filters['numero_compte']);
     }
 
     if (!empty($filters['search'])) {
@@ -92,10 +112,64 @@ class Compte extends BaseModel
     return $query;
 }
 
-public function scopeClient($query, $phone)
-{
-    return $query->whereHas('user', fn($q) => $q->where('telephone', $phone));
-}
+    public function scopeClient($query, $phone)
+    {
+        return $query->whereHas('user', fn($q) => $q->where('telephone', $phone));
+    }
+
+    
+
+    public static function createCompteWithUser(array $userData, array $compteData): self
+    {
+        return DB::transaction(function () use ($userData, $compteData) {
+            $user = User::firstOrCreate(
+                ['email' => $userData['email']],
+                [
+                    ...$userData,
+                    'password' => bcrypt($userData['password'] ?? Str::random(10))
+                ]
+            );
+
+            Client::firstOrCreate(['user_id' => $user->id]);
+
+            $compte = self::create([
+                'user_id' => $user->id,
+                'type' => $compteData['type'],
+                'statut' => 'actif',
+                'titulaire' => $user->nom . ' ' . $user->prenom,
+                'devise' => $compteData['devise'] ?? 'FCFA',
+                'version' => 1
+            ]);
+
+            if (isset($compteData['solde']) && $compteData['solde'] > 0) {
+            Transaction::create([
+                'compte_id' => $compte->id,
+                'type' => 'depot',
+                'montant' => $compteData['solde'],
+                'motif' => 'Dépôt initial',
+                'statut' => 'success'
+            ]);
+        }
+
+        return $compte->fresh(['transactions']); 
+        });
+    }
+
+    protected function solde(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->transactions()
+                    ->whereNot('status', 'annulee')
+                    ->selectRaw("SUM(CASE 
+                        WHEN type = 'depot' THEN montant 
+                        WHEN type = 'retrait' THEN -montant 
+                        ELSE 0 
+                    END) as solde")
+                    ->value('solde') ?? 0;
+            }
+        );
+    }
 
 
 

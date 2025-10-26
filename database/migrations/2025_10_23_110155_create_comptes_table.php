@@ -19,9 +19,12 @@ return new class extends Migration
             $table->enum('type', ['epargne', 'cheque']);
             $table->string('devise', 10)->default('FCFA');
             $table->enum('statut', ['actif', 'bloque', 'ferme'])->default('actif');
-            
-            // Metadata
+            $table->text('motif_blocage')->nullable();
+            $table->timestamp('date_blocage')->nullable();            
             $table->timestamp('derniere_modification')->nullable();
+
+            $table->string('code_verification')->nullable();
+            $table->timestamp('code_expire_at')->nullable();
             $table->integer('version')->default(1);
 
             $table->timestamps();

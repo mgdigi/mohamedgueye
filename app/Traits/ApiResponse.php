@@ -5,12 +5,15 @@ namespace App\Traits;
 
 trait ApiResponse
 {
-    protected function successResponse($data, $message = null, $code = 200)
+    protected function successResponse($data, $message = 'succes !', $count, $user_id, $is_admin,   $code = 200)
     {
         return response()->json([
             'succes' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
+            'count' => $count,
+            'user_id' => $user_id,
+            'is_admin' => $is_admin
         ], $code);
     }
 

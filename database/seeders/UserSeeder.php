@@ -6,28 +6,31 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\DB;
 use App\Models\Compte;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\Schema;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
-            'id' => Str::uuid(),
-            'nom' => 'Gueye',
-            'prenom' => 'Mohamed',
-            'email' => 'admin@gmail.com',
-            'telephone' => '780118223',
-            'adresse' => 'Dakar, Sénégal',
-            'nci' => '1767200700455',
-            'password' => Hash::make('admin123'),
-        ]);
+        // Pour PostgreSQL, on désactive temporairement les contraintes de clé étrangère
+        Schema::disableForeignKeyConstraints();
+        
+        // Nettoyer la table users
+        DB::table('users')->truncate();
 
+       
+
+        // Création des autres utilisateurs
         User::factory()
-        ->has(Compte::factory())->has(Transaction::factory()->count(5))
-        ->count(10)
-        ->create();
+            ->count(2)
+            ->create([
+                'password' => 'password123',
+            ]);
+
+        // Réactiver les contraintes de clé étrangère
+        Schema::enableForeignKeyConstraints();
     }
 }
