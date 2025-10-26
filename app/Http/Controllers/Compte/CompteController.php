@@ -13,6 +13,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
+
 use App\Exceptions\CreateFailedException;
 
 
@@ -21,6 +22,16 @@ use App\Exceptions\CreateFailedException;
  *     title="API de Gestion des Comptes Bancaires",
  *     version="1.0.0",
  *     description="API pour la gestion des comptes bancaires avec authentification Passport"
+
+/**
+ * @OA\Info(
+ *     title="API de Gestion des Comptes",
+ *     version="1.0.0",
+ *     description="API pour la gestion des comptes bancaires"
+ * )
+ * @OA\Server(
+ *     url="https://ges-compte-laravel.onrender.com/api/v1",
+ *     description="Serveur de production"
  * )
  * @OA\Server(
  *     url="http://localhost:8000/api/v1",
@@ -30,8 +41,13 @@ use App\Exceptions\CreateFailedException;
  *     securityScheme="bearerAuth",
  *     type="http",
  *     scheme="bearer",
+
  *     bearerFormat="JWT",
  *     description="Token d'accès Bearer généré par Passport"
+ *     bearerFormat="JWT"
+ * )
+ * @OA\PathItem(
+ *     path="/api/v1/comptes"
  * )
  */
 class CompteController extends Controller
