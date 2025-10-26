@@ -93,6 +93,21 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'neon' => [
+        'driver' => 'pgsql',
+        'url' => env('NEON_DATABASE_URL'),
+        'host' => env('NEON_DB_HOST', '127.0.0.1'),
+        'port' => env('NEON_DB_PORT', '5432'),
+        'database' => env('NEON_DB_DATABASE', 'forge'),
+        'username' => env('NEON_DB_USERNAME', 'forge'),
+        'password' => env('NEON_DB_PASSWORD', ''),
+        'charset' => 'utf8',
+        'prefix' => '',
+        'prefix_indexes' => true,
+        'schema' => 'public',
+        'sslmode' => 'require', // Important pour Neon
+    ],
+
     ],
 
     /*

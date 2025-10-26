@@ -27,6 +27,9 @@ return new class extends Migration
             $table->timestamp('code_expire_at')->nullable();
             $table->integer('version')->default(1);
 
+            $table->boolean('archived')->default(false);
+            $table->timestamp('date_fin_blocage')->nullable();
+
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

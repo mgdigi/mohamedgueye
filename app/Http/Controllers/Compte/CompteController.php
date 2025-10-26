@@ -20,7 +20,66 @@ use App\Exceptions\CreateFailedException;
  * @OA\Info(
  *     title="API de Gestion des Comptes Bancaires",
  *     version="1.0.0",
- *     description="API pour la gestion des comptes bancaires avec authentification Passport"
+ *     description="API pour la gestion des comptes bancaires avec authentification Passport et archivage automatique.
+
+## 🏦 Fonctionnalités Principales
+
+### Gestion des Comptes
+- Création de comptes bancaires avec validation stricte
+- Authentification via Passport (tokens JWT)
+- Gestion des rôles (Admin/Client)
+- Validation CNI sénégalaise personnalisée
+
+### Archivage Automatique
+Le système inclut un mécanisme d'archivage automatique des comptes via des Jobs Laravel :
+
+#### 🔄 Job ArchiveComptes
+- **Déclenchement** : Automatique via scheduler Laravel
+- **Condition** : Comptes bloqués dont la date de fin de blocage est échue
+- **Action** : Archive le compte et ses transactions dans la base Neon
+- **Processus** :
+  1. Recherche des comptes avec `date_blocage <= now()` et `archived = false`
+  2. Sauvegarde des données JSON dans `comptes_archives` et `transactions_archives`
+  3. Marquage du compte comme archivé (`archived = true`)
+  4. Suppression des données de la base principale
+
+#### 🔄 Job DearchiveComptes
+- **Déclenchement** : Automatique via scheduler Laravel
+- **Condition** : Comptes archivés dont la date de fin de blocage est échue
+- **Action** : Restaure le compte et ses transactions depuis la base Neon
+- **Processus** :
+  1. Recherche dans `comptes_archives` avec `date_fin_blocage <= now()`
+  2. Recréation du compte et des transactions dans la base principale
+  3. Suppression des archives
+
+#### 📊 Base de Données d'Archivage
+- **Connexion** : Base de données Neon (PostgreSQL)
+- **Tables** :
+  - `comptes_archives` : Stockage JSON des comptes
+  - `transactions_archives` : Stockage JSON des transactions
+- **Format** : Données sérialisées en JSON pour préservation complète
+
+#### ⚙️ Configuration
+Les jobs peuvent être configurés dans `app/Console/Kernel.php` :
+```php
+protected function schedule(Schedule $schedule)
+{
+    $schedule->job(new ArchiveComptes)->daily();
+    $schedule->job(new DearchiveComptes)->daily();
+}
+```
+
+#### 📱 Notifications Automatiques
+Lors de la création d'un compte :
+- Envoi de SMS via Twilio avec code de vérification
+- Envoi d'email avec détails du compte
+- Génération automatique de numéro de compte unique
+
+### Sécurité
+- Authentification Bearer obligatoire pour tous les endpoints
+- Autorisation basée sur les rôles utilisateur
+- Validation stricte des données d'entrée
+- Logs détaillés des opérations"
  * )
  * @OA\Server(
  *     url="http://localhost:8000/api/v1",
@@ -32,6 +91,13 @@ use App\Exceptions\CreateFailedException;
  *     scheme="bearer",
  *     bearerFormat="JWT",
  *     description="Token d'accès Bearer généré par Passport"
+ * )
+ */
+
+/**
+ * @OA\Tag(
+ *     name="Archivage",
+ *     description="Système d'archivage automatique des comptes bancaires"
  * )
  */
 class CompteController extends Controller
