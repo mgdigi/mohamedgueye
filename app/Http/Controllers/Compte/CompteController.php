@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Exceptions\CreateFailedException;
 use App\Exceptions\CompteNotFoundException;
 use App\Http\Resources\BloqueRessource;
+use App\Models\User;
+use App\Http\Requests\UpdateCompteRequest;
 
 
 /**
@@ -422,6 +424,82 @@ class CompteController extends Controller
        return $this->successResponse(new CompteRessource($compte), 'Compte récupéré avec succès', 1, $user->id, $user->isAdmin());
    }
 
+   /**
+    * @OA\Post(
+    *     path="/comptes/{compte}/bloquer",
+    *     summary="Bloquer un compte bancaire",
+    *     description="Bloque un compte bancaire avec une durée et un motif spécifiés. Réservé aux administrateurs.",
+    *     operationId="bloquerCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="compte",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à bloquer",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             required={"jours_blocage","motif_blocage"},
+    *             @OA\Property(property="jours_blocage", type="integer", minimum=1, maximum=365, example=30, description="Nombre de jours de blocage"),
+    *             @OA\Property(property="motif_blocage", type="string", maxLength=255, example="Suspicion de fraude", description="Motif du blocage")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte bloqué avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte bloqué avec succès"),
+    *             @OA\Property(property="data", ref="#/components/schemas/Compte"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=true)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=400,
+    *         description="Le compte ne peut pas être bloqué dans son état actuel",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Le compte ne peut pas être bloqué dans son état actuel.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé - Réservé aux administrateurs",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Compte introuvable.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=422,
+    *         description="Erreur de validation",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="The given data was invalid."),
+    *             @OA\Property(property="errors", type="object",
+    *                 @OA\Property(property="jours_blocage", type="array",
+    *                     @OA\Items(type="string", example="Le nombre de jours de blocage doit être au moins de 1 jour.")
+    *                 ),
+    *                 @OA\Property(property="motif_blocage", type="array",
+    *                     @OA\Items(type="string", example="Le motif de blocage est obligatoire.")
+    *                 )
+    *             )
+    *         )
+    *     )
+    * )
+    */
    public function bloquer(BloqueCompteRequest $request, $id)
    {
        $user = Auth::user();
@@ -441,18 +519,71 @@ class CompteController extends Controller
            return $this->errorResponse("Le compte ne peut pas être bloqué dans son état actuel.", 400);
        }
 
-       
+
 
        $compte->statut = 'bloque';
        $compte->motif_blocage = $validated['motif_blocage'];
        $compte->date_blocage = now();
-       $compte->date_fin_blocage = now()->addDays($validated['jours_blocage']); 
+       $compte->date_fin_blocage = now()->addDays($validated['jours_blocage']);
        $compte->save();
 
        return $this->successResponse(new BloqueRessource($compte), 'Compte bloqué avec succès', 1, $user->id, $user->isAdmin());
    }
 
 
+   /**
+    * @OA\Post(
+    *     path="/comptes/{compte}/debloquer",
+    *     summary="Débloquer un compte bancaire",
+    *     description="Débloque un compte bancaire précédemment bloqué. Réservé aux administrateurs.",
+    *     operationId="debloquerCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="compte",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à débloquer",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte débloqué avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte débloqué avec succès"),
+    *             @OA\Property(property="data", ref="#/components/schemas/Compte"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=true)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=400,
+    *         description="Le compte n'est pas bloqué",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Le compte n'est pas bloqué.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé - Réservé aux administrateurs",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Compte introuvable.")
+    *         )
+    *     )
+    * )
+    */
    public function debloquer(Request $request, $id)
    {
        $user = Auth::user();
@@ -472,10 +603,114 @@ class CompteController extends Controller
        }
 
        $compte->statut = 'actif';
-       $compte->date_fin_blocage = now(); 
+       $compte->date_fin_blocage = now();
        $compte->save();
 
        return $this->successResponse(new DebloqueRessource($compte), 'Compte débloqué avec succès', 1, $user->id, $user->isAdmin());
    }
+
+   /**
+    * @OA\Delete(
+    *     path="/comptes/{id}",
+    *     summary="Supprimer un compte bancaire (Soft Delete)",
+    *     description="Supprime un compte bancaire avec soft delete. Les administrateurs peuvent supprimer tous les comptes, les clients ne peuvent supprimer que leurs propres comptes.",
+    *     operationId="deleteCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="id",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à supprimer",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte supprimé avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte supprimé avec succès"),
+    *             @OA\Property(property="data", type="null"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=false)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Compte introuvable.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=500,
+    *         description="Erreur serveur",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Erreur interne du serveur")
+    *         )
+    *     )
+    * )
+    */
+   public function destroy($id){
+    $user = Auth::user();
+
+    $compte = Compte::find($id);
+
+    if(!$compte) {
+        throw new CompteNotFoundException("Compte introuvable.");
+    }
+
+    if (!$user->isAdmin() && $compte->user_id !== $user->id) {
+        return $this->errorResponse("Non autorisé.", 401);
+    }
+
+    $compte->delete();
+
+    return $this->successResponse(null, "Compte supprimé avec succès", 1, $user->id, $user->isAdmin());
+   }
+
+  public function update(UpdateCompteRequest $request, $id)
+{
+    $user = Auth::user();
+
+    $compte = Compte::find($id);
+    if (!$compte) {
+        return $this->errorResponse("Le compte demandé est introuvable.", 404);
+    }
+
+    $client = $compte->user;
+
+    if (!$user->isAdmin() && $user->id !== $client->id) {
+        return $this->errorResponse("Non autorisé.", 401);
+    }
+
+    $validated = $request->validated();
+
+    if (empty($validated)) {
+        return $this->errorResponse("Aucun champ à mettre à jour.", 422);
+    }
+
+    $client->update($validated);
+
+    return $this->successResponse(
+        new CompteRessource($compte),
+        "Client mis à jour avec succès",
+        1,
+        $user->id,
+        $user->isAdmin()
+    );
+}
+
 
 }
