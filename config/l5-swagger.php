@@ -91,7 +91,7 @@ return [
             /*
              * Edit to set the api's base path
              */
-            'base' => env('L5_SWAGGER_BASE_PATH', null),
+            'base' => env('L5_SWAGGER_BASE_PATH', 'api/v1'),
 
             /*
              * Absolute path to directories that should be excluded from scanning
@@ -312,7 +312,7 @@ return [
          * Constants which can be used in annotations
          */
         'constants' => [
-            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://ges-compte-laravel.onrender.com'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://mohamedgueye.onrender.com'),
         ],
     ],
 ];
