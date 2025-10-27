@@ -37,6 +37,15 @@ RUN mkdir -p storage/framework/{cache,data,sessions,testing,views} \
 
 # Les variables d'environnement seront fournies par Render
 
+# Créer un fichier .env minimal pour le build
+RUN echo "APP_NAME=Laravel" > .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_KEY=" >> .env && \
+    echo "APP_DEBUG=false" >> .env && \
+    echo "APP_URL=https://mohamedgueye.onrender.com" >> .env && \
+    echo "LOG_CHANNEL=stack" >> .env && \
+    echo "DB_CONNECTION=pgsql" >> .env
+
 # Générer la clé d'application et optimiser
 USER laravel
 RUN php artisan key:generate --force && \
