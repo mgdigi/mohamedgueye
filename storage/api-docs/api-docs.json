@@ -5,6 +5,9 @@
         "description": "Système d'archivage automatique des comptes bancaires",
         "version": "1.0.0"
     },
+    "servers": [
+        {
+            "url": "api/v1"
         "title": "API de Gestion des Comptes Bancaires",
         "description": "API pour la gestion des comptes bancaires avec authentification Passport",
         "title": "API de Gestion des Comptes",
@@ -22,7 +25,7 @@
         }
     ],
     "paths": {
-        "/login": {
+        "/auth/login": {
             "post": {
                 "tags": [
                     "Authentification"
@@ -43,12 +46,12 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "user@example.com"
+                                        "example": "admin@gmail.com"
                                     },
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "password123"
+                                        "example": "admin123"
                                     }
                                 },
                                 "type": "object"

@@ -32,7 +32,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/login",
+     *     path="/auth/login",
      *     summary="Connexion utilisateur",
      *     description="Authentifie un utilisateur et génère un token d'accès Passport",
      *     operationId="login",
