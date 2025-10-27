@@ -32,6 +32,8 @@ Route::prefix("v1")->group(function () {
     Route::post("/comptes", [CompteController::class, "store"]);
     Route::post("/comptes/{compte}/bloquer", [CompteController::class, "bloquer"]);
     Route::post("/comptes/{compte}/debloquer", [CompteController::class, "debloquer"]);
+
+    Route::delete("/comptes/{id}", [CompteController::class, "destroy"]);
     });
  
 });
