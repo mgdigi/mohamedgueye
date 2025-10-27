@@ -610,6 +610,124 @@ class CompteController extends Controller
    }
 
    /**
+    * @OA\Patch(
+    *     path="/comptes/{compte}",
+    *     summary="Mettre à jour les informations d'un compte bancaire",
+    *     description="Met à jour les informations d'un compte bancaire et de son client. Tous les champs sont optionnels mais au moins un champ doit être modifié. Réservé aux administrateurs.",
+    *     operationId="updateCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="compte",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à mettre à jour",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             @OA\Property(property="titulaire", type="string", maxLength=150, example="John Doe", description="Nom du titulaire du compte (optionnel)"),
+    *             @OA\Property(property="informationsClient", type="object", description="Informations du client à mettre à jour (optionnel)",
+    *                 @OA\Property(property="telephone", type="string", example="771234567", description="Numéro de téléphone unique (format sénégalais)"),
+    *                 @OA\Property(property="email", type="string", format="email", example="john.doe@example.com", description="Adresse email unique"),
+    *                 @OA\Property(property="password", type="string", minLength=6, example="newpassword123", description="Nouveau mot de passe"),
+    *                 @OA\Property(property="nci", type="string", example="1234567890123", description="Numéro CNI valide (13 chiffres)")
+    *             )
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte mis à jour avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte mis à jour avec succès"),
+    *             @OA\Property(property="data", ref="#/components/schemas/Compte"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=true)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé - Réservé aux administrateurs",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé, réservé aux admins")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Le compte demandé est introuvable")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=422,
+    *         description="Erreur de validation",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="message", type="string", example="The given data was invalid."),
+    *             @OA\Property(property="errors", type="object",
+    *                 @OA\Property(property="empty", type="array",
+    *                     @OA\Items(type="string", example="Vous devez fournir au moins un champ à modifier.")
+    *                 ),
+    *                 @OA\Property(property="informationsClient.email", type="array",
+    *                     @OA\Items(type="string", example="Cet email est déjà utilisé.")
+    *                 ),
+    *                 @OA\Property(property="informationsClient.telephone", type="array",
+    *                     @OA\Items(type="string", example="Ce numéro de téléphone est déjà utilisé.")
+    *                 ),
+    *                 @OA\Property(property="informationsClient.nci", type="array",
+    *                     @OA\Items(type="string", example="Ce NCI est déjà utilisé.")
+    *                 )
+    *             )
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=500,
+    *         description="Erreur serveur",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Erreur interne du serveur")
+    *         )
+    *     )
+    * )
+    */
+   public function update(UpdateCompteRequest $request, $id)
+   {
+       $user = Auth::user();
+
+       $compte = Compte::find($id);
+       if (!$compte) {
+           return $this->errorResponse("Le compte demandé est introuvable.", 404);
+       }
+
+       $client = $compte->user;
+
+       if (!$user->isAdmin() && $user->id !== $client->id) {
+           return $this->errorResponse("Non autorisé.", 401);
+       }
+
+       $validated = $request->validated();
+
+       if (empty($validated)) {
+           return $this->errorResponse("Aucun champ à mettre à jour.", 422);
+       }
+
+       $client->update($validated);
+
+       return $this->successResponse(
+           new CompteRessource($compte),
+           "Client mis à jour avec succès",
+           1,
+           $user->id,
+           $user->isAdmin()
+       );
+   }
+
+   /**
     * @OA\Delete(
     *     path="/comptes/{id}",
     *     summary="Supprimer un compte bancaire (Soft Delete)",
@@ -679,38 +797,5 @@ class CompteController extends Controller
 
     return $this->successResponse(null, "Compte supprimé avec succès", 1, $user->id, $user->isAdmin());
    }
-
-  public function update(UpdateCompteRequest $request, $id)
-{
-    $user = Auth::user();
-
-    $compte = Compte::find($id);
-    if (!$compte) {
-        return $this->errorResponse("Le compte demandé est introuvable.", 404);
-    }
-
-    $client = $compte->user;
-
-    if (!$user->isAdmin() && $user->id !== $client->id) {
-        return $this->errorResponse("Non autorisé.", 401);
-    }
-
-    $validated = $request->validated();
-
-    if (empty($validated)) {
-        return $this->errorResponse("Aucun champ à mettre à jour.", 422);
-    }
-
-    $client->update($validated);
-
-    return $this->successResponse(
-        new CompteRessource($compte),
-        "Client mis à jour avec succès",
-        1,
-        $user->id,
-        $user->isAdmin()
-    );
-}
-
 
 }
