@@ -14,6 +14,7 @@ return [
                  */
                 'api' => 'api/documentation',
             ],
+            'generate_always' => env('L5_SWAGGER_GENERATE_ALWAYS', true),
             'paths' => [
                 /*
                  * Edit to include full URL in ui for assets
@@ -313,6 +314,8 @@ return [
          */
         'constants' => [
             'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://mohamedgueye.onrender.com'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://ges-compte-laravel.onrender.com'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'http://my-default-host.com'),
         ],
     ],
 ];

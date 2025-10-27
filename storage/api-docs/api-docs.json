@@ -8,6 +8,20 @@
     "servers": [
         {
             "url": "api/v1"
+        "title": "API de Gestion des Comptes Bancaires",
+        "description": "API pour la gestion des comptes bancaires avec authentification Passport",
+        "title": "API de Gestion des Comptes",
+        "description": "API pour la gestion des comptes bancaires",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://ges-compte-laravel.onrender.com/api/v1",
+            "description": "Serveur de production"
+        },
+        {
+            "url": "http://localhost:8000/api/v1",
+            "description": "Serveur de développement"
         }
     ],
     "paths": {
@@ -1243,6 +1257,20 @@
                 },
                 "type": "object"
             }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Token d'accès Bearer généré par Passport",
+        "/api/v1/comptes": {}
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
         }
     },
     "tags": [
@@ -1255,4 +1283,5 @@
             "description": "Comptes"
         }
     ]
+    }
 }
