@@ -212,7 +212,17 @@ class CompteController extends Controller
     public function index(Request $request)
     {
         try {
+            \Log::info('Début de la méthode index comptes', [
+                'user_id' => Auth::id(),
+                'request_params' => $request->all()
+            ]);
+
             $user = Auth::user();
+
+            if (!$user) {
+                \Log::error('Utilisateur non authentifié');
+                return $this->errorResponse('Non autorisé', 401);
+            }
 
             $cacheKey =  'comptes_' . md5(json_encode($request->all()));
 
@@ -222,10 +232,13 @@ class CompteController extends Controller
             //     return $this->successResponse($cacheData);
             // }
 
+            \Log::info('Tentative de récupération des comptes filtrés');
 
             $comptes = Compte::filtrerComptes($request->all(), $user)
                 ->paginate(min($request->get('limit', 10), 100))
                 ->appends($request->all());
+
+            \Log::info('Comptes récupérés', ['count' => $comptes->count()]);
 
             $data = [
                 'data' => CompteRessource::collection($comptes),
@@ -234,11 +247,17 @@ class CompteController extends Controller
 
             Cache::put($cacheKey, CompteRessource::collection($comptes), now()->addMinutes(10));
 
+            \Log::info('Réponse préparée avec succès');
 
             return $this->successResponse($data, 'comptes recuperer avec succes ! ',$comptes->total(), $user->id, $user->isAdmin());
 
         } catch (\Exception $e) {
-            throw new DatabaseQueryException($e->getMessage());
+            \Log::error('Erreur index comptes: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'request_params' => $request->all()
+            ]);
+            return $this->errorResponse('Erreur lors de la récupération des comptes: ' . $e->getMessage(), 500);
         }
     }
 
