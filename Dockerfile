@@ -35,16 +35,29 @@ RUN mkdir -p storage/framework/{cache,data,sessions,testing,views} \
     && chown -R laravel:laravel /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
-# Les variables d'environnement seront fournies par Render
-
 # Créer un fichier .env minimal pour le build
 RUN echo "APP_NAME=Laravel" > .env && \
     echo "APP_ENV=production" >> .env && \
     echo "APP_KEY=" >> .env && \
     echo "APP_DEBUG=false" >> .env && \
-    echo "APP_URL=https://mohamedgueye.onrender.com" >> .env && \
+    echo "APP_URL=https://mohamedgueye.onrender.com/" >> .env && \
+    echo "" >> .env && \
     echo "LOG_CHANNEL=stack" >> .env && \
-    echo "DB_CONNECTION=pgsql" >> .env
+    echo "LOG_LEVEL=error" >> .env && \
+    echo "" >> .env && \
+    echo "DB_CONNECTION=pgsql" >> .env && \
+    echo "DB_HOST=\${DB_HOST}" >> .env && \
+    echo "DB_PORT=\${DB_PORT}" >> .env && \
+    echo "DB_DATABASE=\${DB_DATABASE}" >> .env && \
+    echo "DB_USERNAME=\${DB_USERNAME}" >> .env && \
+    echo "DB_PASSWORD=\${DB_PASSWORD}" >> .env && \
+    echo "" >> .env && \
+    echo "CACHE_DRIVER=file" >> .env && \
+    echo "SESSION_DRIVER=file" >> .env && \
+    echo "QUEUE_CONNECTION=sync" >> .env
+
+# Changer les permissions du fichier .env pour l'utilisateur laravel
+RUN chown laravel:laravel .env
 
 # Générer la clé d'application et optimiser
 USER laravel
