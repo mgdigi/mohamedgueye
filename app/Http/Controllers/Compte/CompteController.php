@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Compte;
 
 use App\Exceptions\DatabaseQueryException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BloqueCompteRequest;
 use App\Http\Requests\StoreCompteRequest;
 use App\Http\Resources\CompteRessource;
+use App\Http\Resources\DebloqueRessource;
 use App\Http\Resources\MetaRessource;
 use Illuminate\Http\Request;
 use App\Models\Compte;
@@ -15,12 +17,74 @@ use Illuminate\Support\Facades\Cache;
 
 
 use App\Exceptions\CreateFailedException;
+use App\Exceptions\CompteNotFoundException;
+use App\Http\Resources\BloqueRessource;
 
 
 /**
  * @OA\Info(
  *     title="API de Gestion des Comptes Bancaires",
  *     version="1.0.0",
+ *     description="API pour la gestion des comptes bancaires avec authentification Passport et archivage automatique.
+
+## 🏦 Fonctionnalités Principales
+
+### Gestion des Comptes
+- Création de comptes bancaires avec validation stricte
+- Authentification via Passport (tokens JWT)
+- Gestion des rôles (Admin/Client)
+- Validation CNI sénégalaise personnalisée
+
+### Archivage Automatique
+Le système inclut un mécanisme d'archivage automatique des comptes via des Jobs Laravel :
+
+#### 🔄 Job ArchiveComptes
+- **Déclenchement** : Automatique via scheduler Laravel
+- **Condition** : Comptes bloqués dont la date de fin de blocage est échue
+- **Action** : Archive le compte et ses transactions dans la base Neon
+- **Processus** :
+  1. Recherche des comptes avec `date_blocage <= now()` et `archived = false`
+  2. Sauvegarde des données JSON dans `comptes_archives` et `transactions_archives`
+  3. Marquage du compte comme archivé (`archived = true`)
+  4. Suppression des données de la base principale
+
+#### 🔄 Job DearchiveComptes
+- **Déclenchement** : Automatique via scheduler Laravel
+- **Condition** : Comptes archivés dont la date de fin de blocage est échue
+- **Action** : Restaure le compte et ses transactions depuis la base Neon
+- **Processus** :
+  1. Recherche dans `comptes_archives` avec `date_fin_blocage <= now()`
+  2. Recréation du compte et des transactions dans la base principale
+  3. Suppression des archives
+
+#### 📊 Base de Données d'Archivage
+- **Connexion** : Base de données Neon (PostgreSQL)
+- **Tables** :
+  - `comptes_archives` : Stockage JSON des comptes
+  - `transactions_archives` : Stockage JSON des transactions
+- **Format** : Données sérialisées en JSON pour préservation complète
+
+#### ⚙️ Configuration
+Les jobs peuvent être configurés dans `app/Console/Kernel.php` :
+```php
+protected function schedule(Schedule $schedule)
+{
+    $schedule->job(new ArchiveComptes)->daily();
+    $schedule->job(new DearchiveComptes)->daily();
+}
+```
+
+#### 📱 Notifications Automatiques
+Lors de la création d'un compte :
+- Envoi de SMS via Twilio avec code de vérification
+- Envoi d'email avec détails du compte
+- Génération automatique de numéro de compte unique
+
+### Sécurité
+- Authentification Bearer obligatoire pour tous les endpoints
+- Autorisation basée sur les rôles utilisateur
+- Validation stricte des données d'entrée
+- Logs détaillés des opérations"
  *     description="API pour la gestion des comptes bancaires avec authentification Passport"
 
 /**
@@ -48,6 +112,13 @@ use App\Exceptions\CreateFailedException;
  * )
  * @OA\PathItem(
  *     path="/api/v1/comptes"
+ * )
+ */
+
+/**
+ * @OA\Tag(
+ *     name="Archivage",
+ *     description="Système d'archivage automatique des comptes bancaires"
  * )
  */
 class CompteController extends Controller
@@ -276,5 +347,135 @@ class CompteController extends Controller
         );
     }
 }
+
+   /**
+    * @OA\Get(
+    *     path="/comptes/{compte}",
+    *     summary="Récupérer un compte spécifique",
+    *     description="Récupère les détails d'un compte bancaire spécifique. Les clients ne peuvent voir que leurs propres comptes, les administrateurs peuvent voir tous les comptes.",
+    *     operationId="getCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="compte",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à récupérer",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte récupéré avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte récupéré avec succès"),
+    *             @OA\Property(property="data", ref="#/components/schemas/Compte"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=false)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Compte introuvable.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=500,
+    *         description="Erreur serveur",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Erreur interne du serveur")
+    *         )
+    *     )
+    * )
+    */
+   public function show(Request $request, $id)
+   {
+       $user = Auth::user();
+
+       if($user->isAdmin()){
+           $compte = Compte::find($id);
+       }else{
+           $compte = Compte::where('id', $id)->where('user_id', $user->id)->first();
+       }
+
+       if(!$compte) {
+               $compte = Compte::on('neon')->find($id);
+               if(!$compte) {
+                   throw new CompteNotFoundException("Compte introuvable.");
+               }
+           }
+
+
+       return $this->successResponse(new CompteRessource($compte), 'Compte récupéré avec succès', 1, $user->id, $user->isAdmin());
+   }
+
+   public function bloquer(BloqueCompteRequest $request, $id)
+   {
+       $user = Auth::user();
+       $validated = $request->validated();
+
+       if(!$user->isAdmin()) {
+           return $this->errorResponse("Non autorisé reserve aux admins ", 401);
+       }
+
+       $compte = Compte::find($id);
+
+       if(!$compte) {
+           throw new CompteNotFoundException("Compte introuvable.");
+       }
+
+       if($compte->statut !== 'actif' && $compte->statut !== 'epargne') {
+           return $this->errorResponse("Le compte ne peut pas être bloqué dans son état actuel.", 400);
+       }
+
+       
+
+       $compte->statut = 'bloque';
+       $compte->motif_blocage = $validated['motif_blocage'];
+       $compte->date_blocage = now();
+       $compte->date_fin_blocage = now()->addDays($validated['jours_blocage']); 
+       $compte->save();
+
+       return $this->successResponse(new BloqueRessource($compte), 'Compte bloqué avec succès', 1, $user->id, $user->isAdmin());
+   }
+
+
+   public function debloquer(Request $request, $id)
+   {
+       $user = Auth::user();
+
+       if(!$user->isAdmin()) {
+           return $this->errorResponse("Non autorisé reserve aux admins ", 401);
+       }
+
+       $compte = Compte::find($id);
+
+       if(!$compte) {
+           throw new CompteNotFoundException("Compte introuvable.");
+       }
+
+       if($compte->statut !== 'bloque') {
+           return $this->errorResponse("Le compte n'est pas bloqué.", 400);
+       }
+
+       $compte->statut = 'actif';
+       $compte->date_fin_blocage = now(); 
+       $compte->save();
+
+       return $this->successResponse(new DebloqueRessource($compte), 'Compte débloqué avec succès', 1, $user->id, $user->isAdmin());
+   }
 
 }

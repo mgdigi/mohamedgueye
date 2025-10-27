@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Exceptions;
+use App\Models\Compte;
+use App\Exceptions\CompteNotFoundException;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
@@ -21,10 +23,18 @@ class Handler extends ExceptionHandler
     /**
      * Register the exception handling callbacks for the application.
      */
-    public function register(): void
-    {
-        $this->reportable(function (Throwable $e) {
-            //
-        });
-    }
+    public function register()
+{
+    $this->renderable(function (ModelNotFoundException $e, $request) {
+        if ($e->getModel() === Compte::class) {
+            throw new CompteNotFoundException();
+        }
+    });
+
+    $this->renderable(function (\Illuminate\Database\QueryException $e, $request) {
+        if (str_contains($e->getMessage(), 'invalid input syntax for type uuid')) {
+            throw new CompteNotFoundException();
+        }
+    });
+}
 }
