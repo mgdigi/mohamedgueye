@@ -31,9 +31,11 @@ COPY --chown=laravel:laravel . .
 # Créer les répertoires nécessaires et définir les permissions
 RUN mkdir -p storage/framework/{cache,data,sessions,testing,views} \
     && mkdir -p storage/logs \
+    && mkdir -p storage/app/public \
     && mkdir -p bootstrap/cache \
     && chown -R laravel:laravel /var/www/html \
-    && chmod -R 775 storage bootstrap/cache
+    && chmod -R 775 storage bootstrap/cache \
+    && chmod -R 775 storage/app
 
 # Ne PAS créer de .env ici - utiliser les variables d'environnement de Render
 

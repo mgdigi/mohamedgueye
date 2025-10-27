@@ -36,6 +36,20 @@ fi
 echo "📊 Exécution des migrations..."
 php artisan migrate --force || echo "⚠️  Erreur lors des migrations"
 
+# Installer Passport (clés de cryptage)
+echo "🔐 Installation de Passport..."
+if [ ! -f "storage/oauth-private.key" ] || [ ! -f "storage/oauth-public.key" ]; then
+    echo "Génération des clés Passport..."
+    php artisan passport:keys --force
+else
+    echo "Clés Passport déjà existantes"
+fi
+
+# Créer les clients Passport si nécessaire
+echo "👥 Configuration des clients Passport..."
+php artisan passport:client --personal --no-interaction --name="Personal Access Client" || echo "Client personnel déjà existant"
+php artisan passport:client --password --no-interaction --name="Password Grant Client" || echo "Client password déjà existant"
+
 # Régénérer les caches en production
 if [ "$APP_ENV" = "production" ]; then
     echo "⚡ Optimisation pour la production..."

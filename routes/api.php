@@ -40,3 +40,29 @@ Route::prefix("v1")->group(function () {
 });
 
 
+Route::get('/health', function () {
+       return response()->json([
+           'status' => 'ok',
+           'db' => DB::connection()->getPdo() ? 'connected' : 'failed'
+       ]);
+   });
+
+Route::get('/passport-check', function () {
+    try {
+        $privateKeyExists = file_exists(storage_path('oauth-private.key'));
+        $publicKeyExists = file_exists(storage_path('oauth-public.key'));
+        
+        return response()->json([
+            'passport_installed' => class_exists('Laravel\Passport\Passport'),
+            'private_key_exists' => $privateKeyExists,
+            'public_key_exists' => $publicKeyExists,
+            'storage_writable' => is_writable(storage_path()),
+            'clients_count' => DB::table('oauth_clients')->count(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+});
