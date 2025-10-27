@@ -4,13 +4,10 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Jobs\ArchiveComptes;
-use App\Jobs\DearchiveComptes;
 
 class Kernel extends ConsoleKernel
 {
-
-    protected $commands = [
+     protected $commands = [
         \App\Console\Commands\TestNeonConnection::class,
     ];
 
@@ -39,4 +36,13 @@ class Kernel extends ConsoleKernel
                 });
     }
 
+    /**
+     * Register the commands for the application.
+     */
+    protected function commands(): void
+    {
+        $this->load(__DIR__.'/Commands');
+
+        require base_path('routes/console.php');
+    }
 }

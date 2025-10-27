@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 use App\Exceptions\CreateFailedException;
+use App\Exceptions\CompteNotFoundException;
 
 
 /**
@@ -326,5 +327,79 @@ class CompteController extends Controller
         );
     }
 }
+
+   /**
+    * @OA\Get(
+    *     path="/comptes/{compte}",
+    *     summary="Récupérer un compte spécifique",
+    *     description="Récupère les détails d'un compte bancaire spécifique. Les clients ne peuvent voir que leurs propres comptes, les administrateurs peuvent voir tous les comptes.",
+    *     operationId="getCompte",
+    *     tags={"Comptes"},
+    *     security={{"bearerAuth":{}}},
+    *     @OA\Parameter(
+    *         name="compte",
+    *         in="path",
+    *         required=true,
+    *         description="ID du compte à récupérer",
+    *         @OA\Schema(type="string", format="uuid")
+    *     ),
+    *     @OA\Response(
+    *         response=200,
+    *         description="Compte récupéré avec succès",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="Compte récupéré avec succès"),
+    *             @OA\Property(property="data", ref="#/components/schemas/Compte"),
+    *             @OA\Property(property="total", type="integer", example=1),
+    *             @OA\Property(property="user_id", type="string", format="uuid", example="550e8400-e29b-41d4-a716-446655440000"),
+    *             @OA\Property(property="is_admin", type="boolean", example=false)
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=401,
+    *         description="Non autorisé",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Non autorisé")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=404,
+    *         description="Compte introuvable",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Compte introuvable.")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=500,
+    *         description="Erreur serveur",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="succes", type="boolean", example=false),
+    *             @OA\Property(property="message", type="string", example="Erreur interne du serveur")
+    *         )
+    *     )
+    * )
+    */
+   public function show(Request $request, $id)
+   {
+       $user = Auth::user();
+
+       if($user->isAdmin()){
+           $compte = Compte::find($id);
+       }else{
+           $compte = Compte::where('id', $id)->where('user_id', $user->id)->first();
+       }
+
+       if(!$compte) {
+               $compte = Compte::on('neon')->find($id);
+               if(!$compte) {
+                   throw new CompteNotFoundException("Compte introuvable.");
+               }
+           }
+
+
+       return $this->successResponse(new CompteRessource($compte), 'Compte récupéré avec succès', 1, $user->id, $user->isAdmin());
+   }
 
 }

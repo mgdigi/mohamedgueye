@@ -28,6 +28,7 @@ Route::prefix("v1")->group(function () {
 
   Route::middleware('auth:api')->group(function () {
     Route::get("/comptes", [CompteController::class, "index"]);
+    Route::get("/comptes/{compte}", [CompteController::class, "show"]);
     Route::post("/comptes", [CompteController::class, "store"]);
     });
  
