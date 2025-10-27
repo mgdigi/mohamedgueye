@@ -29,6 +29,7 @@ return new class extends Migration
 
             $table->boolean('archived')->default(false);
             $table->timestamp('date_fin_blocage')->nullable();
+            $table->boolean('is_blocque')->default(false)->after('blocage_fin');
 
             $table->timestamps();
 

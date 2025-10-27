@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Compte;
 
 use App\Exceptions\DatabaseQueryException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BloqueCompteRequest;
 use App\Http\Requests\StoreCompteRequest;
 use App\Http\Resources\CompteRessource;
+use App\Http\Resources\DebloqueRessource;
 use App\Http\Resources\MetaRessource;
 use Illuminate\Http\Request;
 use App\Models\Compte;
@@ -15,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 
 use App\Exceptions\CreateFailedException;
 use App\Exceptions\CompteNotFoundException;
+use App\Http\Resources\BloqueRessource;
 
 
 /**
@@ -400,6 +403,62 @@ class CompteController extends Controller
 
 
        return $this->successResponse(new CompteRessource($compte), 'Compte récupéré avec succès', 1, $user->id, $user->isAdmin());
+   }
+
+   public function bloquer(BloqueCompteRequest $request, $id)
+   {
+       $user = Auth::user();
+       $validated = $request->validated();
+
+       if(!$user->isAdmin()) {
+           return $this->errorResponse("Non autorisé reserve aux admins ", 401);
+       }
+
+       $compte = Compte::find($id);
+
+       if(!$compte) {
+           throw new CompteNotFoundException("Compte introuvable.");
+       }
+
+       if($compte->statut !== 'actif' && $compte->statut !== 'epargne') {
+           return $this->errorResponse("Le compte ne peut pas être bloqué dans son état actuel.", 400);
+       }
+
+       
+
+       $compte->statut = 'bloque';
+       $compte->motif_blocage = $validated['motif_blocage'];
+       $compte->date_blocage = now();
+       $compte->date_fin_blocage = now()->addDays($validated['jours_blocage']); 
+       $compte->save();
+
+       return $this->successResponse(new BloqueRessource($compte), 'Compte bloqué avec succès', 1, $user->id, $user->isAdmin());
+   }
+
+
+   public function debloquer(Request $request, $id)
+   {
+       $user = Auth::user();
+
+       if(!$user->isAdmin()) {
+           return $this->errorResponse("Non autorisé reserve aux admins ", 401);
+       }
+
+       $compte = Compte::find($id);
+
+       if(!$compte) {
+           throw new CompteNotFoundException("Compte introuvable.");
+       }
+
+       if($compte->statut !== 'bloque') {
+           return $this->errorResponse("Le compte n'est pas bloqué.", 400);
+       }
+
+       $compte->statut = 'actif';
+       $compte->date_fin_blocage = now(); 
+       $compte->save();
+
+       return $this->successResponse(new DebloqueRessource($compte), 'Compte débloqué avec succès', 1, $user->id, $user->isAdmin());
    }
 
 }
