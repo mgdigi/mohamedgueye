@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Exceptions\CreateFailedException;
 use App\Exceptions\CompteNotFoundException;
 use App\Http\Resources\BloqueRessource;
+use App\Models\User;
+use App\Http\Requests\UpdateCompteRequest;
 
 
 /**
@@ -660,5 +662,38 @@ class CompteController extends Controller
 
     return $this->successResponse(null, "Compte supprimé avec succès", 1, $user->id, $user->isAdmin());
    }
+
+  public function update(UpdateCompteRequest $request, $id)
+{
+    $user = Auth::user();
+
+    $compte = Compte::find($id);
+    if (!$compte) {
+        return $this->errorResponse("Le compte demandé est introuvable.", 404);
+    }
+
+    $client = $compte->user;
+
+    if (!$user->isAdmin() && $user->id !== $client->id) {
+        return $this->errorResponse("Non autorisé.", 401);
+    }
+
+    $validated = $request->validated();
+
+    if (empty($validated)) {
+        return $this->errorResponse("Aucun champ à mettre à jour.", 422);
+    }
+
+    $client->update($validated);
+
+    return $this->successResponse(
+        new CompteRessource($compte),
+        "Client mis à jour avec succès",
+        1,
+        $user->id,
+        $user->isAdmin()
+    );
+}
+
 
 }
