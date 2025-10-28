@@ -461,8 +461,9 @@ class CompteController extends Controller
     *     @OA\RequestBody(
     *         required=true,
     *         @OA\JsonContent(
-    *             required={"jours_blocage","motif_blocage"},
+    *             required={"jours_blocage","date_blocage","motif_blocage"},
     *             @OA\Property(property="jours_blocage", type="integer", minimum=1, maximum=365, example=30, description="Nombre de jours de blocage"),
+    *             @OA\Property(property="date_blocage", type="string", format="date", example="2025-11-01", description="Date de début du blocage"),
     *             @OA\Property(property="motif_blocage", type="string", maxLength=255, example="Suspicion de fraude", description="Motif du blocage")
     *         )
     *     ),
@@ -535,15 +536,13 @@ class CompteController extends Controller
        }
 
        if($compte->statut !== 'actif' && $compte->statut !== 'epargne') {
-           return $this->errorResponse("Le compte ne peut pas être bloqué dans son état actuel.", 400);
+           return $this->errorResponse("Le compte ne peut pas être bloqué il est deja en etat bloqué .", 400);
        }
-
-
 
        $compte->statut = 'bloque';
        $compte->motif_blocage = $validated['motif_blocage'];
-       $compte->date_blocage = now();
-       $compte->date_fin_blocage = now()->addDays($validated['jours_blocage']);
+       $compte->date_blocage = $validated['date_blocage'];
+       $compte->date_fin_blocage = \Carbon\Carbon::parse($validated['date_blocage'])->addDays($validated['jours_blocage']);
        $compte->save();
 
        return $this->successResponse(new BloqueRessource($compte), 'Compte bloqué avec succès', 1, $user->id, $user->isAdmin());

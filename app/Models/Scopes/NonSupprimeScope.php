@@ -10,6 +10,6 @@ class NonSupprimeScope implements Scope
 {
     public function apply(Builder $builder, Model $model)
     {
-        $builder->whereNull($model->getTable() . '.deleted_at');
+        $builder->whereNull($model->getTable() . '.deleted_at')->where($model->getTable() . '.status', '!=', 'bloque');
     }
 } 
