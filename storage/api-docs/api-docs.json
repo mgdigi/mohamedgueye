@@ -56,10 +56,11 @@
                                             "type": "boolean",
                                             "example": true
                                         },
-                                        "user": {
-                                            "$ref": "#/components/schemas/User"
-                                        },
                                         "token": {
+                                            "type": "string",
+                                            "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
+                                        },
+                                        "refresh_token": {
                                             "type": "string",
                                             "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."
                                         }
@@ -1290,6 +1291,13 @@
         }
     },
     "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
         "schemas": {
             "User": {
                 "description": "Objet représentant un utilisateur",

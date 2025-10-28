@@ -50,8 +50,8 @@ class AuthController extends Controller
      *         description="Connexion réussie",
      *         @OA\JsonContent(
      *             @OA\Property(property="succes", type="boolean", example=true),
-     *             @OA\Property(property="user", ref="#/components/schemas/User"),
-     *             @OA\Property(property="token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...")
+     *             @OA\Property(property="token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9..."),
+     *             @OA\Property(property="refresh_token", type="string", example="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...")
      *         )
      *     ),
      *     @OA\Response(
@@ -88,11 +88,12 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('API Token')->accessToken;
+        $refreshToken = $user->createToken('Refresh Token')->accessToken;
 
         return response()->json([
             'succes' => true,
-            'user' => $user,
             'token' => $token,
+            'refresh_token' => $refreshToken,
         ]);
     }
 
