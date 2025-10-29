@@ -130,12 +130,10 @@ class Compte extends BaseModel
 
             $user = User::create([
                 ...$userData,
-                'password' => bcrypt($userData['password']),
+                'password' => $plainPassword,
                 'password_temporaire' => $plainPassword,
                 'code_verification' => str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT)
             ]);
-
-            $user->plain_password = $plainPassword;
 
             Client::create(['user_id' => $user->id]);
         }

@@ -38,6 +38,7 @@ class User extends Authenticatable
         'password',
         'is_verified',
         'code_verification',
+        'password_temporaire',
     ];
 
     /**
@@ -64,11 +65,11 @@ class User extends Authenticatable
     
 
     protected function password(): Attribute
-{
-    return Attribute::make(
-        set: fn ($value) => Hash::make($value),
-    );
-}
+    {
+        return Attribute::make(
+            set: fn ($value) => is_null($value) ? null : Hash::make($value),
+        );
+    }
 
     public function client(){
         return $this->hasOne(Client::class);

@@ -291,7 +291,7 @@
                                     "type",
                                     "solde",
                                     "devise",
-                                    "user"
+                                    "client"
                                 ],
                                 "properties": {
                                     "type": {
@@ -320,8 +320,8 @@
                                         ],
                                         "example": "FCFA"
                                     },
-                                    "user": {
-                                        "description": "Informations de l'utilisateur",
+                                    "client": {
+                                        "description": "Informations du client",
                                         "required": [
                                             "nom",
                                             "prenom",
@@ -333,13 +333,13 @@
                                         ],
                                         "properties": {
                                             "nom": {
-                                                "description": "Nom de l'utilisateur",
+                                                "description": "Nom du client",
                                                 "type": "string",
                                                 "maxLength": 255,
                                                 "example": "Doe"
                                             },
                                             "prenom": {
-                                                "description": "Prénom de l'utilisateur",
+                                                "description": "Prénom du client",
                                                 "type": "string",
                                                 "maxLength": 255,
                                                 "example": "John"
@@ -357,17 +357,17 @@
                                                 "example": "john.doe@example.com"
                                             },
                                             "telephone": {
-                                                "description": "Numéro de téléphone unique (format sénégalais)",
+                                                "description": "Numéro de téléphone unique (format sénégalais commençant par 77, 78, 70, etc.)",
                                                 "type": "string",
                                                 "example": "771234567"
                                             },
                                             "nci": {
-                                                "description": "Numéro CNI valide (13 chiffres)",
+                                                "description": "Numéro CNI valide (13 chiffres, commence par 1 pour homme ou 2 pour femme, les 6 chiffres suivants forment une date de naissance valide au format AAMMJJ où AA=année, MM=mois, JJ=jour)",
                                                 "type": "string",
                                                 "example": "1234567890123"
                                             },
                                             "adresse": {
-                                                "description": "Adresse de l'utilisateur",
+                                                "description": "Adresse du client",
                                                 "type": "string",
                                                 "example": "Dakar, Sénégal"
                                             }

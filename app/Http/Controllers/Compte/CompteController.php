@@ -261,19 +261,19 @@ class CompteController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"type","solde","devise","user"},
+     *             required={"type","solde","devise","client"},
      *             @OA\Property(property="type", type="string", enum={"epargne", "cheque"}, example="epargne", description="Type de compte"),
      *             @OA\Property(property="solde", type="number", format="float", minimum=10000, example=50000, description="Solde initial (minimum 10 000)"),
      *             @OA\Property(property="devise", type="string", enum={"FCFA", "EUR", "USD"}, example="FCFA", description="Devise du compte"),
-     *             @OA\Property(property="user", type="object", description="Informations de l'utilisateur",
+     *             @OA\Property(property="client", type="object", description="Informations du client",
      *                 required={"nom","prenom","password","email","telephone","nci","adresse"},
-     *                 @OA\Property(property="nom", type="string", maxLength=255, example="Doe", description="Nom de l'utilisateur"),
-     *                 @OA\Property(property="prenom", type="string", maxLength=255, example="John", description="Prénom de l'utilisateur"),
+     *                 @OA\Property(property="nom", type="string", maxLength=255, example="Doe", description="Nom du client"),
+     *                 @OA\Property(property="prenom", type="string", maxLength=255, example="John", description="Prénom du client"),
      *                 @OA\Property(property="password", type="string", minLength=6, example="password123", description="Mot de passe"),
      *                 @OA\Property(property="email", type="string", format="email", example="john.doe@example.com", description="Adresse email unique"),
-     *                 @OA\Property(property="telephone", type="string", example="771234567", description="Numéro de téléphone unique (format sénégalais)"),
-     *                 @OA\Property(property="nci", type="string", example="1234567890123", description="Numéro CNI valide (13 chiffres)"),
-     *                 @OA\Property(property="adresse", type="string", example="Dakar, Sénégal", description="Adresse de l'utilisateur")
+     *                 @OA\Property(property="telephone", type="string", example="771234567", description="Numéro de téléphone unique (format sénégalais commençant par 77, 78, 70, etc.)"),
+     *                 @OA\Property(property="nci", type="string", example="1234567890123", description="Numéro CNI valide (13 chiffres, commence par 1 pour homme ou 2 pour femme, les 6 chiffres suivants forment une date de naissance valide au format AAMMJJ où AA=année, MM=mois, JJ=jour)"),
+     *                 @OA\Property(property="adresse", type="string", example="Dakar, Sénégal", description="Adresse du client")
      *             )
      *         )
      *     ),
@@ -350,9 +350,26 @@ class CompteController extends Controller
             201
         );
 
+    } catch (\Illuminate\Database\QueryException $e) {
+        // Gestion des erreurs de base de données
+        if ($e->getCode() == 23000) { // Violation de contrainte d'intégrité
+            return $this->errorResponse(
+                "Erreur lors de la création du compte: Données dupliquées ou contraintes non respectées.",
+                422
+            );
+        }
+        return $this->errorResponse(
+            "Erreur lors de la création du compte: Problème de base de données.",
+            500
+        );
     } catch (CreateFailedException $e) {
         return $this->errorResponse(
             "Erreur lors de la création du compte: " . $e->getMessage(),
+            500
+        );
+    } catch (\Exception $e) {
+        return $this->errorResponse(
+            "Erreur lors de la création du compte: Une erreur inattendue s'est produite.",
             500
         );
     }
