@@ -29,7 +29,6 @@ class Compte extends BaseModel
         'statut',
         'derniere_modification',
         'version',
-        'code_verification',
         'code_expire_at'
     ];
 
@@ -120,28 +119,45 @@ class Compte extends BaseModel
     
 
     public static function createCompteWithUser(array $userData, array $compteData): self
-    {
-        return DB::transaction(function () use ($userData, $compteData) {
-            $user = User::firstOrCreate(
-                ['email' => $userData['email']],
-                [
-                    ...$userData,
-                    'password' => bcrypt($userData['password'] ?? Str::random(10))
-                ]
-            );
+{
+    return DB::transaction(function () use ($userData, $compteData) {
 
-            Client::firstOrCreate(['user_id' => $user->id]);
+        $user = User::where('email', $userData['email'])->first();
 
-            $compte = self::create([
-                'user_id' => $user->id,
-                'type' => $compteData['type'],
-                'statut' => 'actif',
-                'titulaire' => $user->nom . ' ' . $user->prenom,
-                'devise' => $compteData['devise'] ?? 'FCFA',
-                'version' => 1
+        if (!$user) {
+
+            $plainPassword = $userData['password'] ?? Str::random(10);
+
+            $user = User::create([
+                ...$userData,
+                'password' => bcrypt($userData['password']),
+                'password_temporaire' => $plainPassword,
+                'code_verification' => str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT)
             ]);
 
-            if (isset($compteData['solde']) && $compteData['solde'] > 0) {
+            $user->plain_password = $plainPassword;
+
+            Client::create(['user_id' => $user->id]);
+        }
+
+        $existingCompte = self::where('user_id', $user->id)
+                              ->where('type', $compteData['type'])
+                              ->first();
+
+        if ($existingCompte) {
+            return $existingCompte->fresh(['transactions']);
+        }
+
+        $compte = self::create([
+            'user_id' => $user->id,
+            'type' => $compteData['type'],
+            'statut' => 'actif',
+            'titulaire' => $user->nom . ' ' . $user->prenom,
+            'devise' => $compteData['devise'] ?? 'FCFA',
+            'version' => 1
+        ]);
+
+        if (isset($compteData['solde']) && $compteData['solde'] > 0) {
             Transaction::create([
                 'compte_id' => $compte->id,
                 'type' => 'depot',
@@ -152,8 +168,9 @@ class Compte extends BaseModel
         }
 
         return $compte->fresh(['transactions']); 
-        });
-    }
+    });
+}
+
 
     protected function solde(): Attribute
     {

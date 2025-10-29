@@ -40,14 +40,12 @@ class DearchiveComptes implements ShouldQueue
             foreach ($comptesADesarchiver as $compteArchive) {
                 $data = json_decode($compteArchive->data, true);
                 
-                // Recréer le compte
                 $compte = Compte::create(array_merge($data, [
                     'archived' => false,
                     'date_blocage' => null,
                     'date_fin_blocage' => null
                 ]));
 
-                // Récupérer et recréer les transactions
                 $transactions = $neonConnection->table('transactions_archives')
                     ->where('compte_id', $compteArchive->id)
                     ->get();
@@ -57,7 +55,6 @@ class DearchiveComptes implements ShouldQueue
                     $compte->transactions()->create($transactionData);
                 }
 
-                // Supprimer les archives
                 $neonConnection->table('transactions_archives')
                     ->where('compte_id', $compteArchive->id)
                     ->delete();

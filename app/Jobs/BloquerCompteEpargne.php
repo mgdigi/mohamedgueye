@@ -27,7 +27,7 @@ class BloquerCompteEpargne implements ShouldQueue
         if($this->compte->status === 'actif' && $this->compte->type_compte === 'epargne') {
             $this->compte->blocage_debut = now();
             $this->compte->date_fin_blocage = now()->addDays($this->jours);
-            $this->compte->is_blocque = true;
+            $this->compte->is_bloqued = true;
             $this->compte->save();
         }
     }

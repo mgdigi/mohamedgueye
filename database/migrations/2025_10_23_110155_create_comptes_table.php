@@ -23,13 +23,12 @@ return new class extends Migration
             $table->timestamp('date_blocage')->nullable();            
             $table->timestamp('derniere_modification')->nullable();
 
-            $table->string('code_verification')->nullable();
             $table->timestamp('code_expire_at')->nullable();
             $table->integer('version')->default(1);
 
             $table->boolean('archived')->default(false);
             $table->timestamp('date_fin_blocage')->nullable();
-            $table->boolean('is_blocque')->default(false)->after('blocage_fin');
+            $table->boolean('is_bloqued')->default(false)->after('blocage_fin');
 
             $table->timestamps();
 

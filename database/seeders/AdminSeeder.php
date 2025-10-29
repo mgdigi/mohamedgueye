@@ -22,6 +22,7 @@ class AdminSeeder extends Seeder
             'adresse' => 'Dakar, Sénégal',
             'nci' => '1234567890123',
             'password' => 'admin123', 
+            'is_verified' => 'true'
         ]);
 
         // Créer l'enregistrement admin associé

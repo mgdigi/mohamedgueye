@@ -23,7 +23,8 @@ class BloqueCompteRequest extends FormRequest
     {
         return [
             'jours_blocage' => 'required|integer|min:1|max:365',
-            'date_blocage' => 'required|date|after:today',
+            // 'date_blocage' => 'required|date|after:today',
+            'date_blocage' => 'required|date',
             'motif_blocage' => 'required|string|max:255',
         ];
 
@@ -39,7 +40,7 @@ class BloqueCompteRequest extends FormRequest
             'jours_blocage.max' => 'Le nombre de jours de blocage ne peut pas dépasser 365 jours.',
             'date_blocage.required' => 'La date de blocage est obligatoire.',
             'date_blocage.date' => 'La date de blocage doit être une date valide.',
-            'date_blocage.after' => 'La date de blocage doit être une date future.',
+            // 'date_blocage.after' => 'La date de blocage doit être une date future.',
             'motif_blocage.required' => 'Le motif de blocage est obligatoire.',
             'motif_blocage.string' => 'Le motif de blocage doit être une chaîne de caractères.',
             'motif_blocage.max' => 'Le motif de blocage ne peut pas dépasser 255 caractères.',

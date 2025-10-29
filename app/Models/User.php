@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Passport\HasApiTokens;
+use Illuminate\Support\Facades\DB;  
 
 class User extends Authenticatable
 {
@@ -34,7 +35,9 @@ class User extends Authenticatable
         'telephone',
         'adresse',
         'nci',
-        'password'
+        'password',
+        'is_verified',
+        'code_verification',
     ];
 
     /**
@@ -90,6 +93,9 @@ class User extends Authenticatable
     public function isAdmin(): bool {
         return $this->admin()->exists();
     }
+
+    
+
 
     
 

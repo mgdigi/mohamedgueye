@@ -77,16 +77,21 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'code_verification' => ['sometimes','digits:6']
         ]);
 
-        if (!Auth::attempt($credentials)) {
-            return response()->json([
-                'succes' => false,
-                'message' => 'Identifiants invalides'
-            ], 401);
+        if (!Auth::attempt([ 'email' => $credentials['email'], 'password' => $credentials['password'] ])) {
+            return $this->errorResponse('Identifiants invalides', 401);
         }
 
         $user = Auth::user();
+
+        if($user->is_verified == false){
+            if(!isset($credentials['code_verification']) || $credentials['code_verification'] != $user->code_verification){
+                return $this->errorResponse('Code de vérification invalide', 403);
+            }
+            $user->update(['is_verified' => true ]);
+        }
         $token = $user->createToken('API Token')->accessToken;
         $refreshToken = $user->createToken('Refresh Token')->accessToken;
 

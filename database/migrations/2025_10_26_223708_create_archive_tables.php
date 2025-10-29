@@ -11,6 +11,7 @@ return new class extends Migration
 public function up()
 {
     try {
+        if(!Schema::connection('neon')->hasTable('comptes_archives')) {
         Schema::connection('neon')->create('comptes_archives', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('numero_compte');
@@ -20,7 +21,9 @@ public function up()
             $table->timestamps();
             $table->softDeletes();
         });
+    }
 
+    if(!Schema::connection('neon')->hasTable('transactions_archives')) {
         Schema::connection('neon')->create('transactions_archives', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('compte_id');
@@ -34,6 +37,7 @@ public function up()
                   ->on('comptes_archives')
                   ->onDelete('cascade');
         });
+    }
     } catch (\Exception $e) {
         \Log::error('Erreur migration : ' . $e->getMessage());
         throw $e;

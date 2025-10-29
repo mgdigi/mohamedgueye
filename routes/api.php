@@ -31,7 +31,6 @@ Route::prefix("v1")->group(function () {
     Route::get("/comptes/{compte}", [CompteController::class, "show"]);
     Route::post("/comptes", [CompteController::class, "store"])->middleware('logging');
     Route::post("/comptes/{compte}/bloquer", [CompteController::class, "bloquer"]);
-    Route::post("/comptes/{compte}/debloquer", [CompteController::class, "debloquer"]);
 
     Route::delete("/comptes/{id}", [CompteController::class, "destroy"]);
     Route::patch('/comptes/{compte}', [CompteController::class, 'update'])->middleware('logging');

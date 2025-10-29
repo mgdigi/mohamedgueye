@@ -22,6 +22,7 @@ class UserFactory extends Factory
             'adresse' => $this->faker->address(),
             'nci' => strtoupper($this->faker->bothify('??######??')),
             'password' => Hash::make('password123'),
+            'is_verified' => 'true',
         ];
     }
 }

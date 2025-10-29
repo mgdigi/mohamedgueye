@@ -212,15 +212,11 @@ class CompteController extends Controller
     public function index(Request $request)
     {
         try {
-            \Log::info('Début de la méthode index comptes', [
-                'user_id' => Auth::id(),
-                'request_params' => $request->all()
-            ]);
+            
 
             $user = Auth::user();
 
             if (!$user) {
-                \Log::error('Utilisateur non authentifié');
                 return $this->errorResponse('Non autorisé', 401);
             }
 
@@ -232,13 +228,11 @@ class CompteController extends Controller
             //     return $this->successResponse($cacheData);
             // }
 
-            \Log::info('Tentative de récupération des comptes filtrés');
 
             $comptes = Compte::filtrerComptes($request->all(), $user)
                 ->paginate(min($request->get('limit', 10), 100))
                 ->appends($request->all());
 
-            \Log::info('Comptes récupérés', ['count' => $comptes->count()]);
 
             $data = [
                 'data' => CompteRessource::collection($comptes),
@@ -247,16 +241,11 @@ class CompteController extends Controller
 
             Cache::put($cacheKey, CompteRessource::collection($comptes), now()->addMinutes(10));
 
-            \Log::info('Réponse préparée avec succès');
 
             return $this->successResponse($data, 'comptes recuperer avec succes ! ',$comptes->total(), $user->id, $user->isAdmin());
 
         } catch (\Exception $e) {
-            \Log::error('Erreur index comptes: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'user_id' => Auth::id(),
-                'request_params' => $request->all()
-            ]);
+            
             return $this->errorResponse('Erreur lors de la récupération des comptes: ' . $e->getMessage(), 500);
         }
     }
@@ -348,7 +337,7 @@ class CompteController extends Controller
         $validated = $request->validated();
         
         $compte = Compte::createCompteWithUser(
-            $validated['user'],
+            $validated['client'],
             $validated
         );
 
@@ -539,13 +528,12 @@ class CompteController extends Controller
            return $this->errorResponse("Le compte ne peut pas être bloqué il est deja en etat bloqué .", 400);
        }
 
-       $compte->statut = 'bloque';
        $compte->motif_blocage = $validated['motif_blocage'];
        $compte->date_blocage = $validated['date_blocage'];
        $compte->date_fin_blocage = \Carbon\Carbon::parse($validated['date_blocage'])->addDays($validated['jours_blocage']);
        $compte->save();
 
-       return $this->successResponse(new BloqueRessource($compte), 'Compte bloqué avec succès', 1, $user->id, $user->isAdmin());
+       return $this->successResponse(new BloqueRessource($compte), 'Bloquage planifié avec succes ! ', 1, $user->id, $user->isAdmin());
    }
 
 

@@ -21,6 +21,7 @@ class ClientSeeder extends Seeder
             'nci' => '1987654321098',
             'email' => 'client@gmail.com',
             'password' => 'client123',
+            'is_verified' => 'true'
         ]);
 
         Client::create([

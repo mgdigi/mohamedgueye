@@ -7,6 +7,7 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Jobs\ArchiveComptes;
 use App\Jobs\DearchiveComptes;
 use App\Jobs\BloquerCompteEpargne;  
+use App\Models\Compte;
 
 class Kernel extends ConsoleKernel
 {
@@ -41,13 +42,16 @@ class Kernel extends ConsoleKernel
 
          $schedule->call(function () {
         $comptesAEpargner = Compte::where('status', 'actif')
-                                  ->where('type_compte', 'epargne')
+                                  ->where('type', 'epargne')
                                   ->get();
 
         foreach($comptesAEpargner as $compte) {
             BloquerCompteEpargne::dispatch($compte, 7); // exemple 7 jours
         }
     })->daily();
+
+      
+      $schedule->command('comptes:appliquer-blocages');
     }
 
     /**

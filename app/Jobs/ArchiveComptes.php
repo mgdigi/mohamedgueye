@@ -43,12 +43,11 @@ class ArchiveComptes implements ShouldQueue
             $neonConnection = DB::connection('neon');
 
             $comptesAArchiver = Compte::where('date_blocage', '<=', now())
-                                    ->where('archived', false)
+                                    ->where('archived', operator: false)
                                     ->with('transactions')
                                     ->get();
 
             foreach ($comptesAArchiver as $compte) {
-               
                 $neonConnection->table('comptes_archives')->insert([
                     'id' => $compte->id,
                     'numero_compte' => $compte->numero_compte,
@@ -57,7 +56,6 @@ class ArchiveComptes implements ShouldQueue
                     'archived_at' => now(),
                 ]);
 
-                // Archiver les transactions
                 foreach ($compte->transactions as $transaction) {
                     $neonConnection->table('transactions_archives')->insert([
                         'id' => $transaction->id,
@@ -67,10 +65,8 @@ class ArchiveComptes implements ShouldQueue
                     ]);
                 }
 
-                // Marquer comme archivé
                 $compte->update(['archived' => true]);
                 
-                // Supprimer de la base principale
                 $compte->transactions()->delete();
                 $compte->delete();
             }
