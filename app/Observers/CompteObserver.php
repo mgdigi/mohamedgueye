@@ -14,7 +14,6 @@ class CompteObserver
     public function created(Compte $compte): void
 {
     try {
-        // Recharger la relation user avec tous ses attributs
         $compte->load('user');
 
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -25,7 +24,6 @@ class CompteObserver
             'user_id' => $compte->user->id
         ]);
 
-        // --- Envoi SMS via Twilio ---
         try {
             $twilioClient = new \Twilio\Rest\Client(
                 config('services.twilio.sid'),
@@ -43,7 +41,6 @@ class CompteObserver
             \Log::error('Erreur envoi SMS:', ['error' => $e->getMessage()]);
         }
 
-        // --- Envoi Email ---
         try {
             \Mail::to($compte->user->email)
                 ->send(new CompteCreated($compte, $plainPassword));
@@ -53,7 +50,6 @@ class CompteObserver
             \Log::error('Erreur envoi email:', ['error' => $e->getMessage()]);
         }
 
-        // --- Mise à jour du code ---
         $compte->update([
             'code_verification' => $code,
             'code_expire_at' => now()->addHours(24)
